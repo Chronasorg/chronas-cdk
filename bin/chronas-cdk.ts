@@ -7,6 +7,10 @@ import { SecretStack } from '../lib/secret-stack';
 
 import { CloudWatchStack } from '../lib/cloudwatch-stack';
 import { DnsStack } from '../lib/dns-stack';
+import { DynamoDbStack } from '../lib/dynamodb-stack';
+
+import { ApiGatewayStack } from '../lib/api-gateway-stack';
+
 import { ChronasApiLambaStack } from '../lib/chronas-api-lambda-stack';
 import { BuildChronasAPiStack } from '../lib/build-chronas-api-stack';
 import { AmplifyStack} from '../lib/amplify-stack';
@@ -49,27 +53,50 @@ cdk.Tags.of(databaseStack).add('auto-stop', 'no');
 
 //create a new CDK stack for DNS Stack
 const dnsStack = new DnsStack(app, 'DnsStack');
-cdk.Tags.of(networkStack).add('auto-delete', 'never');
-cdk.Tags.of(networkStack).add('auto-stop', 'no');
+cdk.Tags.of(dnsStack).add('auto-delete', 'never');
+cdk.Tags.of(dnsStack).add('auto-stop', 'no');
+
+//create a new api gateway stack 
+const apiGatewayStack = new ApiGatewayStack(app, 'ApiGatewayStack', {
+    apiCertificate: dnsStack.apiCertificate,
+    cloudwatchChronasDashboard: cloudwatchStack.cloudwatchChronasDashboard
+
+});
+cdk.Tags.of(apiGatewayStack).add('auto-delete', 'never');
+cdk.Tags.of(apiGatewayStack).add('auto-stop', 'no');
+
+
+//create a new lambda dynamodb stack
+const metadataLinksStack = new DynamoDbStack(app, 'DynamoDbStack',
+    {
+        httpApi: apiGatewayStack.httpApi
+
+    });
+cdk.Tags.of(metadataLinksStack).add('auto-delete', 'never');
+cdk.Tags.of(metadataLinksStack).add('auto-stop', 'no');
 
 //create a new CDK stack for publishing the frontend to Amplify
 const amplifyStack = new AmplifyStack(app, 'AmplifyStack', { 
     githubtoken: secretStack.chronasGithubtoken 
 })
+
 cdk.Tags.of(amplifyStack).add('auto-delete', 'never');
 cdk.Tags.of(amplifyStack).add('auto-stop', 'no');
 
 //create a new CDK stack for API Deployment to Lambda
 const chronasApiLambda = new ChronasApiLambaStack(app, 'ChronasApiLambdaStack', {
     vpc: networkStack.vpc, 
-    apiCertificate:  dnsStack.apiCertificate, 
     repositoryChronasApi: buildChronasApi.repositoryChronasApi, 
     dbSecret: databaseStack.dbSecret, 
     cronasConfig: secretStack.chronasSecrets,
-    cloudwatchChronasDashboard: cloudwatchStack.cloudwatchChronasDashboard
+    cloudwatchChronasDashboard: cloudwatchStack.cloudwatchChronasDashboard,
+    httpApi: apiGatewayStack.httpApi
 });
+
 chronasApiLambda.addDependency(databaseStack);
 chronasApiLambda.addDependency(buildChronasApi);
+
+
 
 /*
 //create a cdk stack which is hosting the API on Fargate
