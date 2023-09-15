@@ -7,7 +7,7 @@ import { SecretStack } from '../lib/secret-stack';
 
 import { CloudWatchStack } from '../lib/cloudwatch-stack';
 import { DnsStack } from '../lib/dns-stack';
-import { DynamoDbStack } from '../lib/dynamodb-stack';
+import { MetaDataLinkStack } from '../lib/metadata-link-stack';
 
 import { ApiGatewayStack } from '../lib/api-gateway-stack';
 
@@ -67,7 +67,7 @@ cdk.Tags.of(apiGatewayStack).add('auto-stop', 'no');
 
 
 //create a new lambda dynamodb stack
-const metadataLinksStack = new DynamoDbStack(app, 'DynamoDbStack',
+const metadataLinksStack = new MetaDataLinkStack(app, 'MetaDataLinkStack',
     {
         httpApi: apiGatewayStack.httpApi
 
