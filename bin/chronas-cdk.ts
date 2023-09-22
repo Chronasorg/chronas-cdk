@@ -18,12 +18,13 @@ import { AmplifyStack} from '../lib/amplify-stack';
 const app = new cdk.App();
 const secretsManagerSecretName = '/chronas/docdb/newpassword';
 
-//create a new CDK stack for networkStack
+//create a new CDK stack for Secrets
 const secretStack = new SecretStack(app, 'SecretStack')
 cdk.Tags.of(secretStack).add('auto-delete', 'never');
 cdk.Tags.of(secretStack).add('auto-stop', 'no');
 
-//create a new CDK stack for networkStack
+
+//create a new CDK stack for Cloudwatch
 const cloudwatchStack = new CloudWatchStack(app, 'CloudwatchStack')
 cdk.Tags.of(secretStack).add('auto-delete', 'never');
 cdk.Tags.of(secretStack).add('auto-stop', 'no');
