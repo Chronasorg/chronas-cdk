@@ -65,7 +65,7 @@ export class DatabaseStack extends cdk.Stack {
       availabilityZone: params.vpc.availabilityZones[1], // Choose an availability zone for the read replica
     });        
     */
-
+/*
     // Create a custom CloudWatch metric for DocumentDB CPUUtilization
     const docDBCPUUtilizationMetric = new cloudwatch.Metric({
       namespace: 'AWS/DocDB',
@@ -103,7 +103,7 @@ export class DatabaseStack extends cdk.Stack {
       })
     );    
 
-
+      */
 
   }
 }

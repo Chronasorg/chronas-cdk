@@ -31,7 +31,7 @@ export class ApiGatewayStack extends cdk.Stack {
         }
       }
     );
-
+/*
     // Add API Gateway metrics to the dashboard
     const apiGateway4XXErrorMetric = this.httpApi.metricClientError({ period: cdk.Duration.seconds(1) });
     const apiGateway5XXErrorMetric = this.httpApi.metricServerError({ period: cdk.Duration.seconds(1) });
@@ -49,7 +49,7 @@ export class ApiGatewayStack extends cdk.Stack {
         left: [apiGatewayCountMetric],
       })
     );
-
+*/
    //output the url of the api gateway
    new cdk.CfnOutput(this, 'ChronasApiUrl', {
     value: this.httpApi.apiEndpoint,

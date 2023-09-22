@@ -72,7 +72,7 @@ export class ChronasApiLambaStack extends cdk.Stack {
       methods: [apigw.HttpMethod.ANY],
       integration: lambdaIntegration,
     });
-
+/*
     // Add Lambda metrics to the dashboard
     const lambdaErrorsMetric = lambdaFunction.metricErrors({ period: cdk.Duration.seconds(1) });
     const lambdaDurationMetric = lambdaFunction.metricDuration({ period: cdk.Duration.seconds(1) });
@@ -137,6 +137,6 @@ export class ChronasApiLambaStack extends cdk.Stack {
         title: 'Lambda Concurrent Executions',
         left: [concurrentExecutionsMetric],
       })
-    );
+    );*/
   }
 }

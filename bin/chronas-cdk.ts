@@ -20,19 +20,22 @@ const secretsManagerSecretName = '/chronas/docdb/newpassword';
 
 //create a new CDK stack for Secrets
 const secretStack = new SecretStack(app, 'SecretStack')
-cdk.Tags.of(secretStack).add('auto-delete', 'never');
+cdk.Tags.of(secretStack).add('chronas', 'never');
 cdk.Tags.of(secretStack).add('auto-stop', 'no');
+cdk.Tags.of(secretStack).add('app', 'chronas');
 
 
 //create a new CDK stack for Cloudwatch
 const cloudwatchStack = new CloudWatchStack(app, 'CloudwatchStack')
-cdk.Tags.of(secretStack).add('auto-delete', 'never');
-cdk.Tags.of(secretStack).add('auto-stop', 'no');
+cdk.Tags.of(cloudwatchStack).add('auto-delete', 'never');
+cdk.Tags.of(cloudwatchStack).add('auto-stop', 'no');
+cdk.Tags.of(cloudwatchStack).add('app', 'chronas');
 
 //create a new CDK stack for networkStack
 const networkStack = new NetworkStack(app, 'NetworkStack')
 cdk.Tags.of(networkStack).add('auto-delete', 'never');
 cdk.Tags.of(networkStack).add('auto-stop', 'no');
+cdk.Tags.of(networkStack).add('app', 'chronas');
 
 //create a new CDK stack for Building the chronas-API and push it to an ECR repostory
 const buildChronasApi = new BuildChronasAPiStack(app, 'BuildChronasAPi', { 
@@ -42,6 +45,7 @@ const buildChronasApi = new BuildChronasAPiStack(app, 'BuildChronasAPi', {
 })
 cdk.Tags.of(buildChronasApi).add('auto-delete', 'never');
 cdk.Tags.of(buildChronasApi).add('auto-stop', 'no');
+cdk.Tags.of(buildChronasApi).add('app', 'chronas');
 
 //create a new CDK stack for databaseStack
 const databaseStack = new DatabaseStack(app, 'DatabaseStack', {
@@ -51,11 +55,13 @@ const databaseStack = new DatabaseStack(app, 'DatabaseStack', {
 });
 cdk.Tags.of(databaseStack).add('auto-delete', 'never');
 cdk.Tags.of(databaseStack).add('auto-stop', 'no');
+cdk.Tags.of(databaseStack).add('app', 'chronas');
 
 //create a new CDK stack for DNS Stack
 const dnsStack = new DnsStack(app, 'DnsStack');
 cdk.Tags.of(dnsStack).add('auto-delete', 'never');
 cdk.Tags.of(dnsStack).add('auto-stop', 'no');
+cdk.Tags.of(dnsStack).add('app', 'chronas');
 
 //create a new api gateway stack 
 const apiGatewayStack = new ApiGatewayStack(app, 'ApiGatewayStack', {
@@ -65,8 +71,9 @@ const apiGatewayStack = new ApiGatewayStack(app, 'ApiGatewayStack', {
 });
 cdk.Tags.of(apiGatewayStack).add('auto-delete', 'never');
 cdk.Tags.of(apiGatewayStack).add('auto-stop', 'no');
+cdk.Tags.of(apiGatewayStack).add('app', 'chronas');
 
-
+/*
 //create a new lambda dynamodb stack
 const metadataLinksStack = new MetaDataLinkStack(app, 'MetaDataLinkStack',
     {
@@ -75,7 +82,7 @@ const metadataLinksStack = new MetaDataLinkStack(app, 'MetaDataLinkStack',
     });
 cdk.Tags.of(metadataLinksStack).add('auto-delete', 'never');
 cdk.Tags.of(metadataLinksStack).add('auto-stop', 'no');
-
+*/
 //create a new CDK stack for publishing the frontend to Amplify
 const amplifyStack = new AmplifyStack(app, 'AmplifyStack', { 
     githubtoken: secretStack.chronasGithubtoken 
@@ -83,6 +90,7 @@ const amplifyStack = new AmplifyStack(app, 'AmplifyStack', {
 
 cdk.Tags.of(amplifyStack).add('auto-delete', 'never');
 cdk.Tags.of(amplifyStack).add('auto-stop', 'no');
+cdk.Tags.of(amplifyStack).add('app', 'chronas');
 
 //create a new CDK stack for API Deployment to Lambda
 const chronasApiLambda = new ChronasApiLambaStack(app, 'ChronasApiLambdaStack', {
@@ -96,6 +104,7 @@ const chronasApiLambda = new ChronasApiLambaStack(app, 'ChronasApiLambdaStack', 
 
 chronasApiLambda.addDependency(databaseStack);
 chronasApiLambda.addDependency(buildChronasApi);
+cdk.Tags.of(chronasApiLambda).add('app', 'chronas');
 
 
 
