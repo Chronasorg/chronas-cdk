@@ -20,6 +20,7 @@ export class AmplifyStack extends cdk.Stack {
       branchName: 'amplify', // Specify the branch you want to deploy (e.g., 'main', 'master')
     });
 
+    /*
     // Add a custom domain name
     new amplify.CfnDomain(this, 'ChronasFrontendDomain', {
       appId: amplifyApp.attrAppId,
@@ -30,6 +31,7 @@ export class AmplifyStack extends cdk.Stack {
       }],
       enableAutoSubDomain: false
     });
+    */
 
   }
 }
