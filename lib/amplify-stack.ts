@@ -15,23 +15,10 @@ export class AmplifyStack extends cdk.Stack {
     });
 
     // Deploy the Amplify app
-    new amplify.CfnBranch(this, 'AmplifyBranch', {
+    new amplify.CfnBranch(this, 'AmplifyMasterBranch', {
       appId: amplifyApp.attrAppId,
-      branchName: 'amplify', // Specify the branch you want to deploy (e.g., 'main', 'master')
-    });
-
-    /*
-    // Add a custom domain name
-    new amplify.CfnDomain(this, 'ChronasFrontendDomain', {
-      appId: amplifyApp.attrAppId,
-      domainName: 'chronas.org', // TODO: do not hardcode      
-      subDomainSettings: [{
-        branchName: 'amplify',
-        prefix: 'chronas-frontend-amplify',
-      }],
-      enableAutoSubDomain: false
-    });
-    */
+      branchName: 'master', // Specify the branch you want to deploy (e.g., 'main', 'master')
+    });    
 
   }
 }
