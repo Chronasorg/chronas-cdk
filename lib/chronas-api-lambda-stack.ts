@@ -25,7 +25,7 @@ export class ChronasApiLambaStack extends cdk.Stack {
     const chronasConfig = params.cronasConfig.secretValue.unsafeUnwrap(); // TODO: fix this, workaround for legacy code
 
     const lambdaFunction = new cdk.aws_lambda.DockerImageFunction(this, 'ChronasApiLambdaFunction', {
-      code: cdk.aws_lambda.DockerImageCode.fromEcr(params.repositoryChronasApi, { tagOrDigest: 'chronas-api-9f18675' }),
+      code: cdk.aws_lambda.DockerImageCode.fromEcr(params.repositoryChronasApi, { tagOrDigest: 'chronas-api-a506632' }),
       memorySize: 300,
       timeout: cdk.Duration.seconds(300),
       tracing: cdk.aws_lambda.Tracing.ACTIVE,
