@@ -9,6 +9,13 @@ export const handler: Handler = async (event, context) => {
 
     const method = event.requestContext.http.method;
 
+    const returnBody = {"type":"g","score":0,"_id":"links","coo":[],"data":{}};
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(returnBody),
+    };
+
     if (method === 'GET') {
         return await getHello(event)
      } else if (method === 'POST') {

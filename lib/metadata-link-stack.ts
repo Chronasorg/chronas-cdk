@@ -38,7 +38,7 @@ export class MetaDataLinkStack extends cdk.Stack {
 
     //create a reoute for /v1
     params.httpApi.addRoutes({
-      path: '/v2/{proxy+}',
+      path: '/v1/metadata/links',
       methods: [apigw.HttpMethod.ANY],
       integration: lambdaIntegration,
     });

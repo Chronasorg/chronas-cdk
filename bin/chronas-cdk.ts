@@ -73,7 +73,7 @@ cdk.Tags.of(apiGatewayStack).add('auto-delete', 'never');
 cdk.Tags.of(apiGatewayStack).add('auto-stop', 'no');
 cdk.Tags.of(apiGatewayStack).add('app', 'chronas');
 
-/*
+
 //create a new lambda dynamodb stack
 const metadataLinksStack = new MetaDataLinkStack(app, 'MetaDataLinkStack',
     {
@@ -82,7 +82,7 @@ const metadataLinksStack = new MetaDataLinkStack(app, 'MetaDataLinkStack',
     });
 cdk.Tags.of(metadataLinksStack).add('auto-delete', 'never');
 cdk.Tags.of(metadataLinksStack).add('auto-stop', 'no');
-*/
+
 //create a new CDK stack for publishing the frontend to Amplify
 const amplifyStack = new AmplifyStack(app, 'AmplifyStack', { 
     githubtoken: secretStack.chronasGithubtoken 
