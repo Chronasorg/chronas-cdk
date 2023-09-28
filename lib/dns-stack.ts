@@ -16,9 +16,5 @@ export class DnsStack extends cdk.Stack {
     }
     );
 
-    //create public hosted zone for the domain 'chronas.org'
-    this.publicHostedZone = new route53.PublicHostedZone(this, 'ChronasPublicHostedZone', {
-      zoneName: 'chronas.org',
-    });    
   }
 }
