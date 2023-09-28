@@ -65,7 +65,7 @@ cdk.Tags.of(dnsStack).add('app', 'chronas');
 
 //create a new api gateway stack 
 const apiGatewayStack = new ApiGatewayStack(app, 'ApiGatewayStack', {
-   // apiCertificate: dnsStack.apiCertificate,
+    apiCertificate: dnsStack.apiCertificate,
     cloudwatchChronasDashboard: cloudwatchStack.cloudwatchChronasDashboard
 
 });
