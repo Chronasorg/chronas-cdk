@@ -18,8 +18,10 @@ export class MetaDataLinkStack extends cdk.Stack {
     super(scope, id, props);
 
     //Dynamodb table definition
-    const table = new Table(this, "Hello", {
-      partitionKey: { name: "name", type: AttributeType.STRING },
+    // Create the DynamoDB table
+    const table = new Table(this, 'masterdata', {
+      tableName: 'MyTable',
+      partitionKey: { name: '_id', type: AttributeType.STRING }
     });
 
     // Lambda function
