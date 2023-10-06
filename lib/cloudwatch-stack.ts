@@ -10,10 +10,8 @@ export class CloudWatchStack extends cdk.Stack {
     super(scope, id, props);
 
     // Create a custom CloudWatch dashboard
-    /*
     this.cloudwatchChronasDashboard = new cloudwatch.Dashboard(this, 'ChronasDashboard', {
       dashboardName: 'ChronasDashboard',
     });    
-    */
   }
 }

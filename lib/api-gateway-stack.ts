@@ -3,6 +3,9 @@ import { Construct } from 'constructs';
 import * as apigw from '@aws-cdk/aws-apigatewayv2-alpha'
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import { CfnStage } from "aws-cdk-lib/aws-apigatewayv2";
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as logs from 'aws-cdk-lib/aws-logs';
 
 
 export class ApiGatewayStack extends cdk.Stack {
@@ -40,7 +43,6 @@ export class ApiGatewayStack extends cdk.Stack {
     exportName: 'ChronasApiUrl',
   });
 
-/*
     // Add API Gateway metrics to the dashboard
     const apiGateway4XXErrorMetric = this.httpApi.metricClientError({ period: cdk.Duration.seconds(1) });
     const apiGateway5XXErrorMetric = this.httpApi.metricServerError({ period: cdk.Duration.seconds(1) });
@@ -58,8 +60,27 @@ export class ApiGatewayStack extends cdk.Stack {
         left: [apiGatewayCountMetric],
       })
     );
-*/
 
+    const stage = this.httpApi.defaultStage!.node.defaultChild as CfnStage;
+    const logGroup = new logs.LogGroup(this.httpApi, 'APIGW-AccessLogs', {
+      retention: 3, // Keep logs for 90 days
+    });
+  
+    stage.accessLogSettings = {
+      destinationArn: logGroup.logGroupArn,
+      format: JSON.stringify({
+        requestId: '$context.requestId',
+        userAgent: '$context.identity.userAgent',
+        sourceIp: '$context.identity.sourceIp',
+        requestTime: '$context.requestTime',
+        httpMethod: '$context.httpMethod',
+        path: '$context.path',
+        status: '$context.status',
+        responseLength: '$context.responseLength',
+      }),
+    };
+  
+    logGroup.grantWrite(new iam.ServicePrincipal('apigateway.amazonaws.com'));
 
   }
 }
