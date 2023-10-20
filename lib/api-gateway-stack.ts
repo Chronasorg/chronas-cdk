@@ -75,6 +75,7 @@ export class ApiGatewayStack extends cdk.Stack {
         requestTime: '$context.requestTime',
         httpMethod: '$context.httpMethod',
         path: '$context.path',
+        resourcePath: '$context.resourcePath',
         status: '$context.status',
         responseLength: '$context.responseLength',
       }),
