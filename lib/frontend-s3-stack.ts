@@ -48,7 +48,7 @@ export class FrontendS3Stack extends cdk.Stack {
       'arn:aws:acm:us-east-1:937826731833:certificate/b9685497-6e5f-4965-ab54-7f1ea1aee8ec'
     );
 
-    // CloudFront distribution
+    // CloudFront distribution with optimized caching based on HAR analysis
     this.distribution = new cloudfront.Distribution(this, 'ChronasDistribution', {
       domainNames: ['chronas.org', '*.chronas.org'],
       certificate: certificate,
@@ -59,7 +59,67 @@ export class FrontendS3Stack extends cdk.Stack {
         compress: true,
       },
       additionalBehaviors: {
-        // Cache static assets for 1 year
+        // Cache versioned JavaScript files for 1 year (immutable)
+        '*.js': {
+          origin: s3Origin,
+          cachePolicy: new cloudfront.CachePolicy(this, 'JavaScriptCachePolicy', {
+            cachePolicyName: 'ChronasJavaScript',
+            defaultTtl: cdk.Duration.days(365),
+            maxTtl: cdk.Duration.days(365),
+            minTtl: cdk.Duration.days(365),
+            headerBehavior: cloudfront.CacheHeaderBehavior.none(),
+            queryStringBehavior: cloudfront.CacheQueryStringBehavior.none(),
+            cookieBehavior: cloudfront.CacheCookieBehavior.none(),
+          }),
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          compress: true,
+        },
+        // Cache CSS files for 1 year (immutable)
+        '*.css': {
+          origin: s3Origin,
+          cachePolicy: new cloudfront.CachePolicy(this, 'CSSCachePolicy', {
+            cachePolicyName: 'ChronasCSS',
+            defaultTtl: cdk.Duration.days(365),
+            maxTtl: cdk.Duration.days(365),
+            minTtl: cdk.Duration.days(365),
+            headerBehavior: cloudfront.CacheHeaderBehavior.none(),
+            queryStringBehavior: cloudfront.CacheQueryStringBehavior.none(),
+            cookieBehavior: cloudfront.CacheCookieBehavior.none(),
+          }),
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          compress: true,
+        },
+        // Cache images for 1 year (immutable assets)
+        '/images/*': {
+          origin: s3Origin,
+          cachePolicy: new cloudfront.CachePolicy(this, 'ImageCachePolicy', {
+            cachePolicyName: 'ChronasImages',
+            defaultTtl: cdk.Duration.days(365),
+            maxTtl: cdk.Duration.days(365),
+            minTtl: cdk.Duration.days(365),
+            headerBehavior: cloudfront.CacheHeaderBehavior.none(),
+            queryStringBehavior: cloudfront.CacheQueryStringBehavior.none(),
+            cookieBehavior: cloudfront.CacheCookieBehavior.none(),
+          }),
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          compress: false, // Images are already compressed
+        },
+        // Cache fonts for 1 year (immutable assets)
+        '*.woff*': {
+          origin: s3Origin,
+          cachePolicy: new cloudfront.CachePolicy(this, 'FontCachePolicy', {
+            cachePolicyName: 'ChronasFonts',
+            defaultTtl: cdk.Duration.days(365),
+            maxTtl: cdk.Duration.days(365),
+            minTtl: cdk.Duration.days(365),
+            headerBehavior: cloudfront.CacheHeaderBehavior.none(),
+            queryStringBehavior: cloudfront.CacheQueryStringBehavior.none(),
+            cookieBehavior: cloudfront.CacheCookieBehavior.none(),
+          }),
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          compress: true,
+        },
+        // Cache static assets for 1 year (legacy /static/ path)
         '/static/*': {
           origin: s3Origin,
           cachePolicy: new cloudfront.CachePolicy(this, 'StaticAssetsCachePolicy', {
@@ -74,7 +134,7 @@ export class FrontendS3Stack extends cdk.Stack {
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           compress: true,
         },
-        // Don't cache HTML files
+        // Don't cache HTML files (immediate updates)
         '*.html': {
           origin: s3Origin,
           cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
