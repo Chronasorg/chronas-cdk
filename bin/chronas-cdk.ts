@@ -13,7 +13,7 @@ import { ApiGatewayStack } from '../lib/api-gateway-stack';
 
 import { ChronasApiLambaStack } from '../lib/chronas-api-lambda-stack';
 import { BuildChronasAPiStack } from '../lib/build-chronas-api-stack';
-import { AmplifyStack} from '../lib/amplify-stack';
+
 import { FrontendS3Stack } from '../lib/frontend-s3-stack';
 import { GitHubActionsUserStack } from '../lib/github-actions-user-stack';
 import { FrontendCertificateStack } from '../lib/frontend-certificate-stack';
@@ -86,14 +86,7 @@ const metadataLinksStack = new MetaDataLinkStack(app, 'MetaDataLinkStack',
 cdk.Tags.of(metadataLinksStack).add('auto-delete', 'never');
 cdk.Tags.of(metadataLinksStack).add('auto-stop', 'no');
 
-//create a new CDK stack for publishing the frontend to Amplify
-const amplifyStack = new AmplifyStack(app, 'AmplifyStack', { 
-    githubtoken: secretStack.chronasGithubtoken 
-})
-
-cdk.Tags.of(amplifyStack).add('auto-delete', 'never');
-cdk.Tags.of(amplifyStack).add('auto-stop', 'no');
-cdk.Tags.of(amplifyStack).add('app', 'chronas');
+//Amplify stack removed - using S3+CloudFront deployment instead
 
 //create a new CDK stack for S3 + CloudFront frontend (alternative to Amplify)
 const frontendS3Stack = new FrontendS3Stack(app, 'ChronasFrontendS3Stack');
