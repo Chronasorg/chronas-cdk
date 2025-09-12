@@ -14,6 +14,9 @@ import { ApiGatewayStack } from '../lib/api-gateway-stack';
 import { ChronasApiLambaStack } from '../lib/chronas-api-lambda-stack';
 import { BuildChronasAPiStack } from '../lib/build-chronas-api-stack';
 import { AmplifyStack} from '../lib/amplify-stack';
+import { FrontendS3Stack } from '../lib/frontend-s3-stack';
+import { GitHubActionsUserStack } from '../lib/github-actions-user-stack';
+import { FrontendCertificateStack } from '../lib/frontend-certificate-stack';
 
 const app = new cdk.App();
 const secretsManagerSecretName = '/chronas/docdb/newpassword';
@@ -91,6 +94,26 @@ const amplifyStack = new AmplifyStack(app, 'AmplifyStack', {
 cdk.Tags.of(amplifyStack).add('auto-delete', 'never');
 cdk.Tags.of(amplifyStack).add('auto-stop', 'no');
 cdk.Tags.of(amplifyStack).add('app', 'chronas');
+
+//create a new CDK stack for S3 + CloudFront frontend (alternative to Amplify)
+const frontendS3Stack = new FrontendS3Stack(app, 'ChronasFrontendS3Stack');
+cdk.Tags.of(frontendS3Stack).add('auto-delete', 'never');
+cdk.Tags.of(frontendS3Stack).add('auto-stop', 'no');
+cdk.Tags.of(frontendS3Stack).add('app', 'chronas');
+
+//create IAM user for GitHub Actions deployment
+const githubActionsUserStack = new GitHubActionsUserStack(app, 'GitHubActionsUserStack');
+cdk.Tags.of(githubActionsUserStack).add('auto-delete', 'never');
+cdk.Tags.of(githubActionsUserStack).add('auto-stop', 'no');
+cdk.Tags.of(githubActionsUserStack).add('app', 'chronas');
+
+//create SSL certificate for chronas.org in us-east-1 (required for CloudFront)
+const frontendCertificateStack = new FrontendCertificateStack(app, 'FrontendCertificateStack', {
+  env: { region: 'us-east-1', account: process.env.CDK_DEFAULT_ACCOUNT },
+});
+cdk.Tags.of(frontendCertificateStack).add('auto-delete', 'never');
+cdk.Tags.of(frontendCertificateStack).add('auto-stop', 'no');
+cdk.Tags.of(frontendCertificateStack).add('app', 'chronas');
 
 //create a new CDK stack for API Deployment to Lambda
 const chronasApiLambda = new ChronasApiLambaStack(app, 'ChronasApiLambdaStack', {
