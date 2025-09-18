@@ -2,5 +2,10 @@
   "hosted-zone:account=937826731833:domainName=chronas.org:region=us-east-1": {
     "Id": "/hostedzone/Z005461139KF8GDMY491N",
     "Name": "chronas.org."
-  }
+  },
+  "availability-zones:account=704516356990:region=eu-west-1": [
+    "eu-west-1a",
+    "eu-west-1b",
+    "eu-west-1c"
+  ]
 }
