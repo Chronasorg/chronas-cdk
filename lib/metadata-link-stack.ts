@@ -3,9 +3,9 @@ import { Construct } from 'constructs';
 import { Table, AttributeType } from 'aws-cdk-lib/aws-dynamodb';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
-import { HttpLambdaIntegration } from '@aws-cdk/aws-apigatewayv2-integrations-alpha';
+import * as apigwv2_integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 
-import * as apigw from '@aws-cdk/aws-apigatewayv2-alpha'
+import * as apigwv2 from 'aws-cdk-lib/aws-apigatewayv2'
 
 import path = require('path');
 
@@ -13,7 +13,7 @@ import path = require('path');
 export class MetaDataLinkStack extends cdk.Stack {
 
   constructor(scope: Construct, id: string, params: {
-    httpApi: apigw.HttpApi
+    httpApi: apigwv2.HttpApi
   },props?: cdk.StackProps) {
     super(scope, id, props);
 
@@ -36,12 +36,12 @@ export class MetaDataLinkStack extends cdk.Stack {
     });
 
         // Create an integration between the API Gateway and the Lambda function
-    const lambdaIntegration = new HttpLambdaIntegration('MetaDataLinks', lambdaPutDynamoDB);
+    const lambdaIntegration = new apigwv2_integrations.HttpLambdaIntegration('MetaDataLinks', lambdaPutDynamoDB);
 
     //create a reoute for /v1
     params.httpApi.addRoutes({
       path: '/v1/metadata/links',
-      methods: [apigw.HttpMethod.ANY],
+      methods: [apigwv2.HttpMethod.ANY],
       integration: lambdaIntegration,
     });
 

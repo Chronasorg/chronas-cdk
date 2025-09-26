@@ -2,11 +2,12 @@
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
 import { DatabaseStack } from '../lib/database-stack';
+import { DatabaseMigrationStack } from '../lib/database-migration-stack';
 import { NetworkStack } from '../lib/network-stack';
 import { SecretStack } from '../lib/secret-stack';
 
 import { CloudWatchStack } from '../lib/cloudwatch-stack';
-import { DnsStack } from '../lib/dns-stack';
+// import { DnsStack } from '../lib/dns-stack'; // Skip DNS for development
 import { MetaDataLinkStack } from '../lib/metadata-link-stack';
 
 import { ApiGatewayStack } from '../lib/api-gateway-stack';
@@ -60,18 +61,37 @@ cdk.Tags.of(databaseStack).add('auto-delete', 'never');
 cdk.Tags.of(databaseStack).add('auto-stop', 'no');
 cdk.Tags.of(databaseStack).add('app', 'chronas');
 
-//create a new CDK stack for DNS Stack
-const dnsStack = new DnsStack(app, 'DnsStack');
-cdk.Tags.of(dnsStack).add('auto-delete', 'never');
-cdk.Tags.of(dnsStack).add('auto-stop', 'no');
-cdk.Tags.of(dnsStack).add('app', 'chronas');
+//create a new CDK stack for database migration (modernized DocumentDB cluster)
+const databaseMigrationStack = new DatabaseMigrationStack(app, 'DatabaseMigrationStack', {
+    vpc: networkStack.vpc,
+    secretName: `${secretsManagerSecretName}-modernized`,
+    environment: 'dev'
+});
+cdk.Tags.of(databaseMigrationStack).add('auto-delete', 'never');
+cdk.Tags.of(databaseMigrationStack).add('auto-stop', 'no');
+cdk.Tags.of(databaseMigrationStack).add('app', 'chronas');
 
-//create a new api gateway stack 
-const apiGatewayStack = new ApiGatewayStack(app, 'ApiGatewayStack', {
-    apiCertificate: dnsStack.apiCertificate,
+//create a new CDK stack for API Deployment to Lambda
+const chronasApiLambda = new ChronasApiLambaStack(app, 'ChronasApiLambdaStackV2', {
+    vpc: networkStack.vpc, 
+    dbSecret: databaseStack.dbSecret, // Keep original reference for IAM permissions
+    cronasConfig: secretStack.chronasSecrets,
     cloudwatchChronasDashboard: cloudwatchStack.cloudwatchChronasDashboard
+});
+
+chronasApiLambda.addDependency(databaseStack);
+// Removed buildChronasApi dependency for native Node.js runtime deployment
+// chronasApiLambda.addDependency(buildChronasApi);
+cdk.Tags.of(chronasApiLambda).add('app', 'chronas');
+
+//create a new api gateway stack (without certificate for development)
+const apiGatewayStack = new ApiGatewayStack(app, 'ApiGatewayStackV2', {
+    // apiCertificate: undefined, // Skip certificate for development
+    cloudwatchChronasDashboard: cloudwatchStack.cloudwatchChronasDashboard,
+    lambdaFunction: chronasApiLambda.lambdaFunction
 
 });
+apiGatewayStack.addDependency(chronasApiLambda);
 cdk.Tags.of(apiGatewayStack).add('auto-delete', 'never');
 cdk.Tags.of(apiGatewayStack).add('auto-stop', 'no');
 cdk.Tags.of(apiGatewayStack).add('app', 'chronas');
@@ -107,20 +127,6 @@ const frontendCertificateStack = new FrontendCertificateStack(app, 'FrontendCert
 cdk.Tags.of(frontendCertificateStack).add('auto-delete', 'never');
 cdk.Tags.of(frontendCertificateStack).add('auto-stop', 'no');
 cdk.Tags.of(frontendCertificateStack).add('app', 'chronas');
-
-//create a new CDK stack for API Deployment to Lambda
-const chronasApiLambda = new ChronasApiLambaStack(app, 'ChronasApiLambdaStack', {
-    vpc: networkStack.vpc, 
-    repositoryChronasApi: buildChronasApi.repositoryChronasApi, 
-    dbSecret: databaseStack.dbSecret, 
-    cronasConfig: secretStack.chronasSecrets,
-    cloudwatchChronasDashboard: cloudwatchStack.cloudwatchChronasDashboard,
-    httpApi: apiGatewayStack.httpApi
-});
-
-chronasApiLambda.addDependency(databaseStack);
-chronasApiLambda.addDependency(buildChronasApi);
-cdk.Tags.of(chronasApiLambda).add('app', 'chronas');
 
 
 

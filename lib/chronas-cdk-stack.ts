@@ -15,29 +15,28 @@ export class ChronasCdkStack extends cdk.Stack {
     const taskRole = new iam.Role(this, 'TaskRole', {
       assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
     });
-    taskRole.addManagedPolicy({
-      managedPolicyArn: 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy',
-    });
-    taskRole.addManagedPolicy({
-      managedPolicyArn: 'arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess',
-    });
-    taskRole.addManagedPolicy({
-      managedPolicyArn: 'arn:aws:iam::aws:policy/SecretsManagerReadWrite',
-    });
+    taskRole.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonECSTaskExecutionRolePolicy')
+    );
+    taskRole.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName('AWSXRayDaemonWriteAccess')
+    );
+    taskRole.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName('SecretsManagerReadWrite')
+    );
 
     const executionRole = new iam.Role(this, 'ExecutionkRole', {
       assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
     });
-    executionRole.addManagedPolicy({
-      managedPolicyArn: 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy',
-    });
+    executionRole.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonECSTaskExecutionRolePolicy')
+    );
 
-    const taskDefinition = new ecs.TaskDefinition(this, 'TaskDefinition', {
+    const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDefinition', {
       taskRole,
       executionRole,
-      compatibility: ecs.Compatibility.FARGATE,
-      cpu: '1024',
-      memoryMiB: '2048',
+      cpu: 1024,
+      memoryLimitMiB: 2048,
     });
 
     const nodeServiceContainer = taskDefinition.addContainer('ChronasService', {

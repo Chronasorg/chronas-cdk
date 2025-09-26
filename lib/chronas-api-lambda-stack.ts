@@ -1,125 +1,135 @@
 import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import * as ecr from 'aws-cdk-lib/aws-ecr';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
-import { HttpLambdaIntegration } from '@aws-cdk/aws-apigatewayv2-integrations-alpha';
+import * as apigwv2 from 'aws-cdk-lib/aws-apigatewayv2';
+import * as apigwv2_integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
-import * as apigw from '@aws-cdk/aws-apigatewayv2-alpha'
+import * as path from 'path';
 
 import { Construct } from 'constructs';
 
 export class ChronasApiLambaStack extends cdk.Stack {
+  public readonly lambdaFunction: lambda.Function;
+
   constructor(scope: Construct, id: string, params: {
     vpc: ec2.Vpc,
-    repositoryChronasApi: ecr.Repository,
     dbSecret: secretsmanager.ISecret,
     cronasConfig: secretsmanager.ISecret,
     cloudwatchChronasDashboard: cloudwatch.Dashboard
-    httpApi: apigw.HttpApi
   }, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    //lambda function which is hosting a container image from ecr and can connect to a vpc
-    // the lambda function is deployed to the vpc and can access the secretsManager
+    // Lambda function using Node.js 22.x native runtime with bundled code
+    // Now using the latest Node.js 22.x runtime available in AWS Lambda
+    // The function is deployed to the VPC and can access Secrets Manager
 
-    const chronasConfig = params.cronasConfig.secretValue.unsafeUnwrap(); // TODO: fix this, workaround for legacy code
-
-    const lambdaFunction = new cdk.aws_lambda.DockerImageFunction(this, 'ChronasApiLambdaFunction', {
-      code: cdk.aws_lambda.DockerImageCode.fromEcr(params.repositoryChronasApi, { tagOrDigest: 'chronas-api-5298233' }),
-      memorySize: 300,
-      timeout: cdk.Duration.seconds(300),
-      tracing: cdk.aws_lambda.Tracing.ACTIVE,
+    const lambdaFunction = new lambda.Function(this, 'ChronasApiLambdaFunction', {
+      runtime: lambda.Runtime.NODEJS_22_X,
+      handler: 'lambda-handler.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../chronas-api'), {
+        // Exclude large files and directories to reduce bundle size
+        exclude: [
+          'scripts/*',
+          'docs/*',
+          'tests/*',
+          '*.md',
+          '.git*',
+          '.vscode/*',
+          'node_modules/.cache/*',
+          'coverage/*'
+        ]
+      }),
+      memorySize: 1024, // Increased for better performance
+      timeout: cdk.Duration.seconds(30), // Reduced for better cost optimization
+      tracing: lambda.Tracing.ACTIVE,
       environment: {
         'VPC_ID': params.vpc.vpcId,
         'SECRET_DB_NAME': params.dbSecret.secretName,
+        'SECRET_MODERNIZED_DB_NAME': '/chronas/dev/docdb/modernized-modernized', // Modernized DocumentDB 5.0 cluster
         'SECRET_CONFIG_NAME': params.cronasConfig.secretName,
         'DEBUG': 'chronas-api:*',
-        'region': this.region,
-        'NODE_ENV': 'development',
-        "PORT": "8080",
-        "chronasConfig": chronasConfig,
-        "CHRONAS_HOST": "https://chronas.org",
-        "FACEBOOK_CALLBACK_URL": "https://api.chronas.org/v1/auth/login/facebook",
-        "GOOGLE_CALLBACK_URL": "https://api.chronas.org/v1/auth/login/google",
-        "GITHUB_CALLBACK_URL": "https://api.chronas.org/v1/auth/login/github",
-        "TWITTER_CALLBACK_URL": "https://api.chronas.org/v1/auth/login/twitter"
+        'NODE_ENV': 'production',
+        'PORT': '8080',
+        'CHRONAS_HOST': 'https://chronas.org',
+        'FACEBOOK_CALLBACK_URL': 'https://api.chronas.org/v1/auth/login/facebook',
+        'GOOGLE_CALLBACK_URL': 'https://api.chronas.org/v1/auth/login/google',
+        'GITHUB_CALLBACK_URL': 'https://api.chronas.org/v1/auth/login/github',
+        'TWITTER_CALLBACK_URL': 'https://api.chronas.org/v1/auth/login/twitter',
+        // Database configuration - will be loaded from Secrets Manager
+        // 'MONGO_HOST': removed to force Secrets Manager usage
+        // 'MONGO_PORT': removed to force Secrets Manager usage
+        // JWT configuration - will be overridden by Secrets Manager
+        'JWT_SECRET': 'fallback-jwt-secret-for-lambda',
+        // Lambda-specific optimizations
+        'NODE_OPTIONS': '--enable-source-maps --max-old-space-size=900'
       },
       vpc: params.vpc,
       vpcSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-      }
+      },
+      // Performance optimizations
+      reservedConcurrentExecutions: 10, // Adjust based on expected load
+      deadLetterQueueEnabled: true,
+      retryAttempts: 2,
     });
 
+    // Grant permissions for Secrets Manager access
     lambdaFunction.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
-      actions: ['secretsmanager:GetSecretValue'],
-      resources: [params.dbSecret.secretFullArn!, params.cronasConfig.secretFullArn!],
+      actions: [
+        'secretsmanager:GetSecretValue',
+        'secretsmanager:DescribeSecret'
+      ],
+      resources: [
+        params.dbSecret.secretFullArn!, 
+        params.cronasConfig.secretFullArn!,
+        `arn:aws:secretsmanager:${this.region}:${this.account}:secret:/chronas/dev/docdb/modernized-modernized*` // Access to modernized DB secret
+      ],
       effect: cdk.aws_iam.Effect.ALLOW
     }));
 
-    // Create an integration between the API Gateway and the Lambda function
-    const lambdaIntegration = new HttpLambdaIntegration('ChronasApiIntegration', lambdaFunction);
+    // Grant permissions for VPC and networking
+    lambdaFunction.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
+      actions: [
+        'ec2:CreateNetworkInterface',
+        'ec2:DescribeNetworkInterfaces',
+        'ec2:DeleteNetworkInterface',
+        'ec2:AttachNetworkInterface',
+        'ec2:DetachNetworkInterface'
+      ],
+      resources: ['*'],
+      effect: cdk.aws_iam.Effect.ALLOW
+    }));
 
-    // Create a default route and associate the Lambda integration with it
-    params.httpApi.addRoutes({
-      path: '/',
-      methods: [apigw.HttpMethod.ANY],
-      integration: lambdaIntegration,
+    // Grant permissions for X-Ray tracing
+    lambdaFunction.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
+      actions: [
+        'xray:PutTraceSegments',
+        'xray:PutTelemetryRecords'
+      ],
+      resources: ['*'],
+      effect: cdk.aws_iam.Effect.ALLOW
+    }));
+
+    // Export the Lambda function so it can be used by other stacks
+    this.lambdaFunction = lambdaFunction;
+    // Add Lambda metrics to the dashboard with optimized periods
+    const lambdaErrorsMetric = lambdaFunction.metricErrors({ 
+      period: cdk.Duration.minutes(5),
+      statistic: 'Sum'
     });
-
-    //create a reoute for /v1
-    params.httpApi.addRoutes({
-      path: '/v1/{proxy+}',
-      methods: [apigw.HttpMethod.ANY],
-      integration: lambdaIntegration,
+    const lambdaDurationMetric = lambdaFunction.metricDuration({ 
+      period: cdk.Duration.minutes(5),
+      statistic: 'Average'
     });
-/*
-    // Add Lambda metrics to the dashboard
-    const lambdaErrorsMetric = lambdaFunction.metricErrors({ period: cdk.Duration.seconds(1) });
-    const lambdaDurationMetric = lambdaFunction.metricDuration({ period: cdk.Duration.seconds(1) });
-    const lambdaInvocationsMetric = lambdaFunction.metricInvocations({ period: cdk.Duration.seconds(1) });
-    const LambdaFunctionThrottlesMetric = lambdaFunction.metricThrottles({ period: cdk.Duration.seconds(1) });
-    const LambdaFunctionDurration = lambdaFunction.metricDuration(
-      {
-        label: 'Duration',
-        period: cdk.Duration.seconds(1),
-        statistic: 'Average',
-        unit: cloudwatch.Unit.SECONDS
-      });
-
-    params.cloudwatchChronasDashboard.addWidgets(
-      new cloudwatch.GraphWidget({
-        title: 'Lambda API Innvocations',
-        left: [lambdaInvocationsMetric],
-      })
-    );
-
-    params.cloudwatchChronasDashboard.addWidgets(
-      new cloudwatch.GraphWidget({
-        title: 'Lambda Function Errors Metrics',
-        left: [lambdaErrorsMetric],
-      })
-    );
-
-    params.cloudwatchChronasDashboard.addWidgets(
-      new cloudwatch.GraphWidget({
-        title: 'Lambda API Durrations Metrics',
-        left: [lambdaDurationMetric],
-      })
-    );
-
-    params.cloudwatchChronasDashboard.addWidgets(
-      new cloudwatch.GraphWidget({
-        title: 'Lambda API Throttles',
-        left: [LambdaFunctionThrottlesMetric],
-      })
-    );
-
-    params.cloudwatchChronasDashboard.addWidgets(
-      new cloudwatch.GraphWidget({
-        title: 'Lambda API Durrations',
-        left: [LambdaFunctionDurration],
-      })
-    );
+    const lambdaInvocationsMetric = lambdaFunction.metricInvocations({ 
+      period: cdk.Duration.minutes(5),
+      statistic: 'Sum'
+    });
+    const lambdaThrottlesMetric = lambdaFunction.metricThrottles({ 
+      period: cdk.Duration.minutes(5),
+      statistic: 'Sum'
+    });
 
     // Create a custom CloudWatch metric for Lambda Concurrent Executions
     const concurrentExecutionsMetric = new cloudwatch.Metric({
@@ -128,15 +138,79 @@ export class ChronasApiLambaStack extends cdk.Stack {
       dimensionsMap: {
         FunctionName: lambdaFunction.functionName,
       },
-      statistic: 'Maximum', // Choose the desired statistic, e.g., Average, Maximum, Minimum, SampleCount, Sum
-      period: cdk.Duration.seconds(1), // Adjust the period as needed
+      statistic: 'Maximum',
+      period: cdk.Duration.minutes(5),
     });
+
+    // Cold start metric
+    const coldStartMetric = new cloudwatch.Metric({
+      namespace: 'AWS/Lambda',
+      metricName: 'Duration',
+      dimensionsMap: {
+        FunctionName: lambdaFunction.functionName,
+      },
+      statistic: 'Maximum',
+      period: cdk.Duration.minutes(5),
+    });
+
+    // Add widgets to dashboard
+    params.cloudwatchChronasDashboard.addWidgets(
+      new cloudwatch.GraphWidget({
+        title: 'Lambda API Invocations & Errors',
+        left: [lambdaInvocationsMetric],
+        right: [lambdaErrorsMetric],
+        width: 12,
+        height: 6,
+      })
+    );
+
+    params.cloudwatchChronasDashboard.addWidgets(
+      new cloudwatch.GraphWidget({
+        title: 'Lambda Performance Metrics',
+        left: [lambdaDurationMetric, coldStartMetric],
+        right: [lambdaThrottlesMetric],
+        width: 12,
+        height: 6,
+      })
+    );
 
     params.cloudwatchChronasDashboard.addWidgets(
       new cloudwatch.GraphWidget({
         title: 'Lambda Concurrent Executions',
         left: [concurrentExecutionsMetric],
+        width: 12,
+        height: 6,
       })
-    );*/
+    );
+
+    // Create CloudWatch alarms for monitoring
+    new cloudwatch.Alarm(this, 'LambdaErrorAlarm', {
+      metric: lambdaErrorsMetric,
+      threshold: 5,
+      evaluationPeriods: 2,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      alarmDescription: 'Lambda function error rate is high',
+    });
+
+    new cloudwatch.Alarm(this, 'LambdaDurationAlarm', {
+      metric: lambdaDurationMetric,
+      threshold: 25000, // 25 seconds
+      evaluationPeriods: 3,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      alarmDescription: 'Lambda function duration is high',
+    });
+
+    // Output Lambda function information
+    new cdk.CfnOutput(this, 'LambdaFunctionName', {
+      value: lambdaFunction.functionName,
+      description: 'Lambda function name',
+      exportName: `${this.stackName}-LambdaFunctionName`,
+    });
+
+    new cdk.CfnOutput(this, 'LambdaFunctionArn', {
+      value: lambdaFunction.functionArn,
+      description: 'Lambda function ARN',
+      exportName: `${this.stackName}-LambdaFunctionArn`,
+    });
   }
 }

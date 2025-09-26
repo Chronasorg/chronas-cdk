@@ -104,7 +104,7 @@ export class DatabaseMigrationStack extends cdk.Stack {
     this.createCloudWatchAlarms(props);
 
     // Add monitoring widgets to dashboard
-    this.addMonitoringWidgets(props.cloudwatchChronasDashboard);
+    this.addMonitoringWidgets(dashboard);
 
     // Output important information
     new cdk.CfnOutput(this, 'DocumentDBClusterEndpoint', {

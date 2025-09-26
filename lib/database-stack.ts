@@ -34,7 +34,7 @@ export class DatabaseStack extends cdk.Stack {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
       },
       vpc: params.vpc,
-      engineVersion: "3.6",
+      engineVersion: "3.6.0",
       parameterGroup: parameterGroup,
     });
 
