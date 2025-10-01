@@ -30,7 +30,8 @@ export class ChronasApiLambaStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(__dirname, '../../chronas-api'), {
         // Exclude large files and directories to reduce bundle size
         exclude: [
-          'scripts/*',
+          'scripts/deploy-*',
+          'scripts/test-*',
           'docs/*',
           'tests/*',
           '*.md',
