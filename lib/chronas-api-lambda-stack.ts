@@ -30,15 +30,34 @@ export class ChronasApiLambaStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(__dirname, '../../chronas-api'), {
         // Exclude large files and directories to reduce bundle size
         exclude: [
-          'scripts/deploy-*',
-          'scripts/test-*',
+          'scripts/*',
           'docs/*',
-          'tests/*',
+          'PostmanTests/*',
+          'server/tests/*',
           '*.md',
           '.git*',
           '.vscode/*',
           'node_modules/.cache/*',
-          'coverage/*'
+          'node_modules/@types/*',
+          'node_modules/typescript/*',
+          'node_modules/eslint*',
+          'node_modules/@eslint*',
+          'node_modules/jest*',
+          'node_modules/@jest*',
+          'node_modules/mocha*',
+          'node_modules/chai*',
+          'node_modules/supertest*',
+          'node_modules/newman*',
+          'node_modules/postman*',
+          'node_modules/mongo-unit*',
+          'node_modules/@faker-js*',
+          'coverage/*',
+          'test-results/*',
+          '*.log',
+          '.env*',
+          'CONTRIBUTING.md',
+          'MIGRATION.md',
+          'README.md'
         ]
       }),
       memorySize: 1024, // Increased for better performance
@@ -59,6 +78,7 @@ export class ChronasApiLambaStack extends cdk.Stack {
         'TWITTER_CALLBACK_URL': 'https://api.chronas.org/v1/auth/login/twitter',
         // Database configuration - will be loaded from Secrets Manager
         // 'MONGO_HOST': removed to force Secrets Manager usage
+        'DOCDB_TLS_ENABLED': 'true', // Enable TLS for DocumentDB 5.0
         // 'MONGO_PORT': removed to force Secrets Manager usage
         // JWT configuration - will be overridden by Secrets Manager
         'JWT_SECRET': 'fallback-jwt-secret-for-lambda',
