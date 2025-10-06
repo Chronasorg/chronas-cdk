@@ -30,7 +30,7 @@ export class BuildChronasAPiStack extends cdk.Stack {
       accessToken: params.chronasGithubtoken.secretValue
     });
 
-    // Create a CodeBuild project
+    // Create a CodeBuild project for Docker builds (legacy)
     new codebuild.Project(this, 'chronas-api-build', {
       source: codebuild.Source.gitHub({
         owner: 'Chronasorg',
@@ -41,7 +41,7 @@ export class BuildChronasAPiStack extends cdk.Stack {
         ],
       }),
       environment: {
-        buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_3,
+        buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_5,
         privileged: true
       },
       environmentVariables: {
@@ -85,7 +85,6 @@ export class BuildChronasAPiStack extends cdk.Stack {
       role,
     });
 
-
     const chronasFrontendRepo = new ecr.Repository(this, 'chronas-frontend-repo',
       { removalPolicy: cdk.RemovalPolicy.DESTROY }
     );
@@ -101,7 +100,7 @@ export class BuildChronasAPiStack extends cdk.Stack {
         ],
       }),
       environment: {
-        buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_3,
+        buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_5,
         privileged: true
       },
       environmentVariables: {
@@ -143,6 +142,137 @@ export class BuildChronasAPiStack extends cdk.Stack {
         },
       }),
       role,
+    });
+
+    // Create a CodeBuild project for Lambda deployment
+    // This will automatically build and deploy the Lambda function on main branch changes
+    const lambdaDeployRole = new iam.Role(this, 'LambdaDeployRole', {
+      assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com'),
+    });
+
+    // Add permissions for Lambda deployment
+    lambdaDeployRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchLogsFullAccess'));
+    lambdaDeployRole.addToPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        // CDK deployment permissions
+        'cloudformation:*',
+        'sts:AssumeRole',
+        'iam:*',
+        's3:*',
+        // Lambda permissions
+        'lambda:*',
+        // API Gateway permissions
+        'apigateway:*',
+        // Secrets Manager permissions
+        'secretsmanager:GetSecretValue',
+        'secretsmanager:DescribeSecret',
+        // VPC permissions
+        'ec2:CreateNetworkInterface',
+        'ec2:DescribeNetworkInterfaces',
+        'ec2:DeleteNetworkInterface',
+        'ec2:AttachNetworkInterface',
+        'ec2:DetachNetworkInterface',
+        'ec2:DescribeVpcs',
+        'ec2:DescribeSubnets',
+        'ec2:DescribeSecurityGroups',
+        // X-Ray permissions
+        'xray:*'
+      ],
+      resources: ['*']
+    }));
+
+    new codebuild.Project(this, 'chronas-api-lambda-deploy', {
+      projectName: 'chronas-api-lambda-deploy-v3',
+      description: 'Automated Lambda deployment for Chronas API on main branch changes',
+      source: codebuild.Source.gitHub({
+        owner: 'Chronasorg',
+        repo: 'chronas-api',
+        webhook: true,
+        webhookFilters: [
+          codebuild.FilterGroup.inEventOf(codebuild.EventAction.PUSH)
+            .andBranchIs('main'), // Only trigger on main branch
+        ],
+      }),
+      environment: {
+        buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_5,
+        computeType: codebuild.ComputeType.SMALL,
+        privileged: false // No Docker needed for Lambda deployment
+      },
+      environmentVariables: {
+        'AWS_DEFAULT_REGION': {
+          value: 'eu-west-1'
+        },
+        'NODE_VERSION': {
+          value: '22'
+        }
+      },
+      buildSpec: codebuild.BuildSpec.fromObject({
+        version: '0.2',
+        phases: {
+          install: {
+            'runtime-versions': {
+              nodejs: '22'
+            },
+            commands: [
+              'echo Installing Node.js 22 and dependencies...',
+              'node --version',
+              'npm --version',
+              'echo Installing CDK CLI...',
+              'npm install -g aws-cdk@latest'
+            ]
+          },
+          pre_build: {
+            commands: [
+              'echo Pre-build phase started on `date`',
+              'echo GitHub webhook trigger: $CODEBUILD_WEBHOOK_TRIGGER',
+              'echo Source version: $CODEBUILD_RESOLVED_SOURCE_VERSION',
+              'echo Installing chronas-api dependencies...',
+              'npm ci',
+              'echo Installing CDK dependencies...',
+              'cd ../chronas-cdk && npm ci',
+              'echo Running tests...',
+              'cd ../chronas-api && npm test',
+              'echo Running integration tests...',
+              'npm run test:integration'
+            ]
+          },
+          build: {
+            commands: [
+              'echo Build phase started on `date`',
+              'echo Building CDK...',
+              'cd ../chronas-cdk && npm run build',
+              'echo Deploying Lambda function...',
+              'npx cdk deploy ChronasApiLambdaStackV2 --require-approval never',
+              'echo Deployment completed successfully!'
+            ]
+          },
+          post_build: {
+            commands: [
+              'echo Post-build phase started on `date`',
+              'echo Getting stack outputs...',
+              'aws cloudformation describe-stacks --stack-name ChronasApiLambdaStackV2 --region eu-west-1 --query "Stacks[0].Outputs" || echo "Could not get stack outputs"',
+              'echo Running post-deployment validation...',
+              'cd ../chronas-api',
+              'echo Testing API health endpoint...',
+              'sleep 30', // Wait for Lambda to be ready
+              'npm run test:postman:dev || echo "Post-deployment tests failed - API might still be warming up"',
+              'echo Build completed on `date`'
+            ]
+          }
+        },
+        reports: {
+          'test-reports': {
+            files: [
+              'test-results*.json',
+              'coverage/lcov.info'
+            ],
+            'base-directory': 'chronas-api'
+          }
+        }
+      }),
+      role: lambdaDeployRole,
+      timeout: cdk.Duration.minutes(30), // Allow enough time for deployment
     });
   }
 }

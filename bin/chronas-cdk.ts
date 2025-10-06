@@ -14,6 +14,7 @@ import { ApiGatewayStack } from '../lib/api-gateway-stack';
 
 import { ChronasApiLambaStack } from '../lib/chronas-api-lambda-stack';
 import { BuildChronasAPiStack } from '../lib/build-chronas-api-stack';
+import { LambdaDeploymentStack } from '../lib/lambda-deployment-stack';
 
 import { FrontendS3Stack } from '../lib/frontend-s3-stack';
 import { GitHubActionsUserStack } from '../lib/github-actions-user-stack';
@@ -50,6 +51,14 @@ const buildChronasApi = new BuildChronasAPiStack(app, 'BuildChronasAPi', {
 cdk.Tags.of(buildChronasApi).add('auto-delete', 'never');
 cdk.Tags.of(buildChronasApi).add('auto-stop', 'no');
 cdk.Tags.of(buildChronasApi).add('app', 'chronas');
+
+//create a new CDK stack for Lambda deployment automation
+const lambdaDeploymentStack = new LambdaDeploymentStack(app, 'LambdaDeploymentStack', {
+    chronasGithubtoken: secretStack.chronasGithubtoken
+});
+cdk.Tags.of(lambdaDeploymentStack).add('auto-delete', 'never');
+cdk.Tags.of(lambdaDeploymentStack).add('auto-stop', 'no');
+cdk.Tags.of(lambdaDeploymentStack).add('app', 'chronas');
 
 //create a new CDK stack for databaseStack
 const databaseStack = new DatabaseStack(app, 'DatabaseStack', {
