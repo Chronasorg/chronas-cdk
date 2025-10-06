@@ -71,6 +71,12 @@ export class LambdaDeploymentStack extends cdk.Stack {
         },
         'NODE_VERSION': {
           value: '22'
+        },
+        'CI': {
+          value: 'true'
+        },
+        'NODE_ENV': {
+          value: 'test'
         }
       },
       buildSpec: codebuild.BuildSpec.fromObject({
@@ -141,16 +147,36 @@ export class LambdaDeploymentStack extends cdk.Stack {
               'echo Post-build phase started on `date`',
               'echo Getting stack outputs...',
               'aws cloudformation describe-stacks --stack-name ChronasApiLambdaStackV2 --region eu-west-1 --query "Stacks[0].Outputs" || echo "Could not get stack outputs"',
-              'echo Skipping post-deployment tests for now...',
+              'echo Running post-deployment validation tests...',
+              'cd ../chronas-api',
+              'echo Installing newman for Postman testing...',
+              'npm install -g newman newman-reporter-htmlextra',
+              'echo Validating Lambda deployment...',
+              'node scripts/validate-lambda-deployment.js ChronasApiLambdaStackV2 eu-west-1',
+              'echo Running Postman tests against deployed Lambda API...',
+              'node scripts/ci-lambda-postman-tests.js enhanced ChronasApiLambdaStackV2 eu-west-1 || echo "⚠️ Some tests failed but deployment continues"',
+              'echo Generating test artifacts...',
+              'mkdir -p test-results',
+              'ls -la test-results/ || echo "No test results directory found"',
               'echo Build completed on `date`'
             ]
           }
         },
         reports: {
-          'test-reports': {
+          'deployment-test-reports': {
             files: [
-              'test-results*.json',
-              'coverage/lcov.info'
+              'test-results/postman-ci-*.json',
+              'test-results/test-summary-*.json',
+              'postman-results-*.json',
+              'postman-results-*.html'
+            ],
+            'base-directory': 'chronas-api',
+            'file-format': 'JUNITXML'
+          },
+          'coverage-reports': {
+            files: [
+              'coverage/lcov.info',
+              'test-results*.json'
             ],
             'base-directory': 'chronas-api'
           }
