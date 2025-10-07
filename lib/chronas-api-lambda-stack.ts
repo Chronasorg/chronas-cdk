@@ -62,7 +62,7 @@ export class ChronasApiLambaStack extends cdk.Stack {
           'README.md'
         ]
       }),
-      memorySize: 1024, // Increased for better performance
+      memorySize: 512, // Optimized based on memory usage analysis
       timeout: cdk.Duration.seconds(30), // Reduced for better cost optimization
       tracing: lambda.Tracing.ACTIVE,
       environment: {
