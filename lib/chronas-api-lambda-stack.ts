@@ -92,7 +92,6 @@ export class ChronasApiLambaStack extends cdk.Stack {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
       },
       // Performance optimizations
-      reservedConcurrentExecutions: 10, // Adjust based on expected load
       deadLetterQueueEnabled: true,
       retryAttempts: 2,
     });
