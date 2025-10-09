@@ -13,13 +13,12 @@ export class DatabaseStack extends cdk.Stack {
   constructor(scope: Construct, id: string, params: { vpc: ec2.Vpc, secretName: string ,cloudwatchChronasDashboard: cloudwatch.Dashboard}, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const parameterGroup = new docdb.ClusterParameterGroup(this, "DDB_Parameter", {
-      dbClusterParameterGroupName: "disabled-tls-parameter",
-      parameters: {
-        tls: "disabled",
-      },
-      family: "docdb3.6",
-    });
+    // Reference the existing production parameter group (created via CLI)
+    const parameterGroup = docdb.ClusterParameterGroup.fromParameterGroupName(
+      this,
+      "DDB_Parameter",
+      "chronas-docdb5-tls-enabled"
+    );
 
     //DocumentDB
     const docDbcluster = new docdb.DatabaseCluster(this, 'Database', {
@@ -34,7 +33,7 @@ export class DatabaseStack extends cdk.Stack {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
       },
       vpc: params.vpc,
-      engineVersion: "3.6.0",
+      engineVersion: "5.0.0",
       parameterGroup: parameterGroup,
     });
 
