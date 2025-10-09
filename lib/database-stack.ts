@@ -8,9 +8,9 @@ import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 
 export class DatabaseStack extends cdk.Stack {
 
-  dbSecret: secretsmanager.ISecret; 
+  dbSecret: secretsmanager.ISecret;
 
-  constructor(scope: Construct, id: string, params: { vpc: ec2.Vpc, secretName: string ,cloudwatchChronasDashboard: cloudwatch.Dashboard}, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, params: { vpc: ec2.Vpc, secretName: string, cloudwatchChronasDashboard: cloudwatch.Dashboard }, props?: cdk.StackProps) {
     super(scope, id, props);
 
     // Reference the existing production parameter group (created via CLI)
@@ -64,45 +64,45 @@ export class DatabaseStack extends cdk.Stack {
       availabilityZone: params.vpc.availabilityZones[1], // Choose an availability zone for the read replica
     });        
     */
-/*
-    // Create a custom CloudWatch metric for DocumentDB CPUUtilization
-    const docDBCPUUtilizationMetric = new cloudwatch.Metric({
-      namespace: 'AWS/DocDB',
-      metricName: 'CPUUtilization',
-      dimensionsMap: {
-        DBClusterIdentifier: docDbcluster.clusterIdentifier,
-      },
-      period: cdk.Duration.seconds(1), // Adjust the period as needed
-      statistic: 'Average', // Choose the desired statistic, e.g., Average, Maximum, Minimum, SampleCount, Sum
-    });
-
-
-    params.cloudwatchChronasDashboard.addWidgets(
-      new cloudwatch.GraphWidget({
-        title: 'DocumentDB CPU Utilization',
-        left: [docDBCPUUtilizationMetric],
-      })
-    );
-
-    // Create a custom CloudWatch metric for DocumentDB CPUUtilization
-    const docConnections = new cloudwatch.Metric({
-      namespace: 'AWS/DocDB',
-      metricName: 'DatabaseConnections',
-      dimensionsMap: {
-        DBClusterIdentifier: docDbcluster.clusterIdentifier,
-      },
-      period: cdk.Duration.seconds(1), // Adjust the period as needed
-      statistic: 'Sum', // Choose the desired statistic, e.g., Average, Maximum, Minimum, SampleCount, Sum
-    });
-
-    params.cloudwatchChronasDashboard.addWidgets(
-      new cloudwatch.GraphWidget({
-        title: 'DocumentDB Connections',
-        left: [docConnections],
-      })
-    );    
-
-      */
+    /*
+        // Create a custom CloudWatch metric for DocumentDB CPUUtilization
+        const docDBCPUUtilizationMetric = new cloudwatch.Metric({
+          namespace: 'AWS/DocDB',
+          metricName: 'CPUUtilization',
+          dimensionsMap: {
+            DBClusterIdentifier: docDbcluster.clusterIdentifier,
+          },
+          period: cdk.Duration.seconds(1), // Adjust the period as needed
+          statistic: 'Average', // Choose the desired statistic, e.g., Average, Maximum, Minimum, SampleCount, Sum
+        });
+    
+    
+        params.cloudwatchChronasDashboard.addWidgets(
+          new cloudwatch.GraphWidget({
+            title: 'DocumentDB CPU Utilization',
+            left: [docDBCPUUtilizationMetric],
+          })
+        );
+    
+        // Create a custom CloudWatch metric for DocumentDB CPUUtilization
+        const docConnections = new cloudwatch.Metric({
+          namespace: 'AWS/DocDB',
+          metricName: 'DatabaseConnections',
+          dimensionsMap: {
+            DBClusterIdentifier: docDbcluster.clusterIdentifier,
+          },
+          period: cdk.Duration.seconds(1), // Adjust the period as needed
+          statistic: 'Sum', // Choose the desired statistic, e.g., Average, Maximum, Minimum, SampleCount, Sum
+        });
+    
+        params.cloudwatchChronasDashboard.addWidgets(
+          new cloudwatch.GraphWidget({
+            title: 'DocumentDB Connections',
+            left: [docConnections],
+          })
+        );    
+    
+          */
 
   }
 }
