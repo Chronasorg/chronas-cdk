@@ -11,7 +11,12 @@
     "test": "jest",
     "cdk": "cdk",
     "deploy": "npm run build && cdk deploy",
-    "synth": "npm run build && cdk synth"
+
+    "deploy:synthetic": "npm run build && cdk deploy --app 'node bin/deploy-synthetic-monitoring.js'",
+    "synth": "npm run build && cdk synth",
+    "synth:monitoring": "npm run build && cdk synth --app 'node bin/deploy-monitoring.js'",
+    "synth:free-monitoring": "npm run build && cdk synth --app 'node bin/deploy-free-monitoring.js'",
+    "synth:synthetic": "npm run build && cdk synth --app 'node bin/deploy-synthetic-monitoring.js'"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",

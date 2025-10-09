@@ -1,0 +1,58 @@
+{
+  "production": {
+    "lambdaFunctionName": "ChronasApiLambdaStackV2-ChronasApiLambdaFunction7C-UhX6kGn4FXqM",
+    "apiGatewayUrl": "https://your-api-gateway-url.amazonaws.com",
+    "apiGatewayName": "chronas-api",
+    "alertEmail": "your-email@example.com",
+    "region": "eu-west-1",
+    "account": "937826731833",
+    "alarmThresholds": {
+      "lambdaErrors": 5,
+      "apiGateway5xxErrors": 10,
+      "lambdaDurationMs": 10000,
+      "databaseHealthPercent": 80,
+      "certificateExpiryDays": 30,
+      "certificateCriticalDays": 7,
+      "syntheticHealthPercent": 80,
+      "endpointResponseTimeMs": {
+        "healthCheck": 2000,
+        "metadataQuery": 15000,
+        "areasData": 20000,
+        "statistics": 10000
+      }
+    },
+    "monitoringSchedule": {
+      "syntheticChecks": "rate(5 minutes)",
+      "databaseHealthChecks": "rate(5 minutes)",
+      "certificateChecks": "rate(24 hours)"
+    }
+  },
+  "development": {
+    "lambdaFunctionName": "ChronasApiLambdaStackV2-ChronasApiLambdaFunction7C-b5U4C0YDGKS5",
+    "apiGatewayUrl": "https://your-dev-api-gateway-url.amazonaws.com",
+    "apiGatewayName": "chronas-api-dev",
+    "alertEmail": "dev-alerts@example.com",
+    "region": "eu-west-1",
+    "account": "704516356990",
+    "alarmThresholds": {
+      "lambdaErrors": 10,
+      "apiGateway5xxErrors": 20,
+      "lambdaDurationMs": 15000,
+      "databaseHealthPercent": 70,
+      "certificateExpiryDays": 30,
+      "certificateCriticalDays": 7,
+      "syntheticHealthPercent": 70,
+      "endpointResponseTimeMs": {
+        "healthCheck": 3000,
+        "metadataQuery": 20000,
+        "areasData": 30000,
+        "statistics": 15000
+      }
+    },
+    "monitoringSchedule": {
+      "syntheticChecks": "rate(10 minutes)",
+      "databaseHealthChecks": "rate(10 minutes)",
+      "certificateChecks": "rate(24 hours)"
+    }
+  }
+}
