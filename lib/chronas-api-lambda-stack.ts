@@ -64,7 +64,6 @@ export class ChronasApiLambaStack extends cdk.Stack {
       }),
       memorySize: 512, // Optimized based on memory usage analysis
       timeout: cdk.Duration.seconds(30), // Reduced for better cost optimization
-      tracing: lambda.Tracing.ACTIVE,
       environment: {
         'VPC_ID': params.vpc.vpcId,
         'SECRET_DB_NAME': params.dbSecret.secretName,
@@ -123,15 +122,7 @@ export class ChronasApiLambaStack extends cdk.Stack {
       effect: cdk.aws_iam.Effect.ALLOW
     }));
 
-    // Grant permissions for X-Ray tracing
-    lambdaFunction.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
-      actions: [
-        'xray:PutTraceSegments',
-        'xray:PutTelemetryRecords'
-      ],
-      resources: ['*'],
-      effect: cdk.aws_iam.Effect.ALLOW
-    }));
+
 
     // Export the Lambda function so it can be used by other stacks
     this.lambdaFunction = lambdaFunction;
