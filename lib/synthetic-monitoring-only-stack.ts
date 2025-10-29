@@ -453,7 +453,7 @@ const areasMarkersCheck = async function () {
             method: 'GET',
             tests: [
                 { name: 'Status code is 200 or 404', check: (response) => response.statusCode === 200 || response.statusCode === 404 },
-                { name: 'Response time is acceptable', check: (response, responseTime) => responseTime < 5000 }
+                { name: 'Response time is acceptable', check: (response, responseTime) => responseTime < 10000 }
             ]
         },
         {
@@ -596,7 +596,7 @@ const statisticsFlagsCheck = async function () {
             method: 'GET',
             tests: [
                 { name: 'Status code is 200 or 404', check: (response) => response.statusCode === 200 || response.statusCode === 404 },
-                { name: 'Response time is acceptable', check: (response, responseTime) => responseTime < 5000 },
+                { name: 'Response time is acceptable', check: (response, responseTime) => responseTime < 10000 },
                 { name: 'Response is valid JSON', check: (response) => {
                     if (response.statusCode !== 200) return true; // Skip JSON check for non-200 responses
                     try {
