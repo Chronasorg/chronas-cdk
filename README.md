@@ -1,31 +1,35 @@
 # Chronas CDK
 
-Chronas CDK is a repository that contains the code and resources for deploying Chronas, an open source project that aims to create a historical map of the world.
+> ## ⚠️ DO NOT RUN `cdk deploy`
+>
+> This CDK repo has **known drift** from deployed AWS resources. A naive `cdk deploy` could damage production.
+>
+> **Current state (April 2026):**
+> - DocumentDB has been **deleted** (migrated to DynamoDB)
+> - Lambda is **no longer in a VPC**
+> - VPC endpoints have been **deleted**
+> - DynamoDB tables were created via CLI (not CDK)
+>
+> Infrastructure changes are made via **AWS CLI**. Do not run `cdk deploy` or `cdk destroy`.
 
-## What is Chronas?
+## What CDK still manages
 
-Chronas is a web application that lets you explore the history of the world through an interactive map. You can see how the world looked like at different points in time, learn about the cultures and civilizations that existed, and discover the events and stories that shaped the world.
+| Stack | Status | Resources |
+|-------|--------|-----------|
+| `ChronasApiLambdaStackV2` | Active | Lambda function, IAM role, SQS DLQ, CloudWatch alarms |
+| `ChronasFrontendS3Stack` | Active | S3 bucket, CloudFront distribution, cache policies |
+| `ChronasApiLambdaStack` (V1) | Orphaned | Old Lambda (unused, safe to delete via CloudFormation console) |
+| `BuildChronasAPi` | Orphaned | CodeBuild + ECR (disabled, safe to delete) |
 
-## How to deploy Chronas CDK?
+## Current Production Architecture
 
-Chronas CDK uses AWS Cloud Development Kit (CDK) to provision and manage the infrastructure for Chronas. You will need to have AWS credentials and CDK installed on your machine to deploy Chronas CDK.
+- **API**: Lambda (Node.js 22) → DynamoDB (10 tables, `chronas-*`)
+- **Frontend**: S3 (`chronas-frontend-new`) → CloudFront → `chronas.org`
+- **Deployment**: GitHub Actions (not CDK)
+- **Cost**: ~$8-10/mo
 
-To deploy Chronas CDK, follow these steps:
+## If you need to change infrastructure
 
-1. Clone this repository to your local machine.
-2. Run `npm install` to install the dependencies.
-3. Run `cdk bootstrap` to bootstrap your AWS environment.
-4. Run `cdk deploy` to deploy the Chronas stack.
-5. Wait for the deployment to complete and note down the output values, such as the API endpoint and the S3 bucket name.
-6. Visit the API endpoint in your browser to see Chronas in action.
-
-## How to contribute to Chronas CDK?
-
-Chronas CDK is an open source project and welcomes contributions from anyone who is interested in history and maps. You can contribute by:
-
-- Reporting issues or bugs
-- Suggesting new features or improvements
-- Submitting pull requests with code or documentation changes
-- Sharing Chronas with your friends and family
-
-
+1. Make the change via `aws` CLI with `--profile chronas-prod`
+2. Document the change in the relevant repo's CLAUDE.md
+3. Do NOT attempt to reconcile CDK with the current state unless doing a dedicated session
